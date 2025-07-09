@@ -1,66 +1,56 @@
-from selenium import webdriver  # Seleniumのwebdriverをインポート
-from selenium.webdriver.chrome.options import Options  # Chromeのオプションをインポート
-from selenium.webdriver.common.by import By  # 要素検索のためのByをインポート
-from selenium.webdriver.remote.webdriver import WebDriver  # WebDriver型をインポート
-from selenium.webdriver.support.ui import WebDriverWait  # 明示的な待機をインポート
-from selenium.webdriver.support import expected_conditions as EC  # 待機条件をインポート
+from selenium import webdriver  # Selenium の WebDriver 操作用
+from selenium.webdriver.common.by import By  # 要素検索方法（ID, XPATH など）の定義
+from selenium.webdriver.support.ui import WebDriverWait  # 明示的に待機を行うためのクラス
+from selenium.webdriver.support import expected_conditions as EC  # 待機条件（要素が存在する、クリック可能など）
+from selenium.webdriver.common.keys import Keys  # キーボード操作（Enter など）用
 
 class LibecityPage:
-    # Chromeドライバーを作成
-    def create_chrome(self) -> WebDriver:
-        options = Options()  # Chromeのオプションを作成
-        driver = webdriver.Chrome(options=options)  # Chromeブラウザを起動
-        return driver  # WebDriverインスタンスを返す
+    def create_chrome(self):
+        options = webdriver.ChromeOptions()          # Chrome の起動オプションを設定するためのオブジェクトを生成
+        return webdriver.Chrome(options=options)     # ヘッドレスなどオプションを指定して Chrome ブラウザを起動
 
-    # ログインページにアクセス
-    def login_page(self, driver: WebDriver):
-        driver.get(url)  # 引数で指定したURLにアクセス
+    def open_login_page(self, driver, url: str) -> bool:
+        try:
+            driver.get(url)                          # 指定された URL をブラウザで開く
+            return True                              # 成功したら True を返す
+        except Exception:
+            return False                             # 何か問題が起きたら False を返す
 
-    # メールアドレス入力欄を取得
-    def get_email_input(self, driver: WebDriver):
-        wait = WebDriverWait(driver, 10)  # 最大10秒待機するwaitを作成
-        element = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, '//input[@placeholder="メールアドレス"]')  # メールアドレス欄をXPATHで指定
-        ))
-        return element  # 要素を返す
+    def type_email(self, driver, email: str) -> bool:
+        try:
+            # メールアドレス入力欄がクリック可能になるまで、最大 10 秒間待つ
+            email_field = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable(           # 要素が画面上に表示され、かつクリック可能になるまで
+                    (By.XPATH, '//*[@id="contents_wrap"]/main/div[1]/section/div[1]/p[2]/input')
+                )
+            )
+            email_field.send_keys(email)             # メールアドレスを入力
+            return True                              # 入力に成功したら True を返す
+        except Exception:
+            return False                             # 取得や入力時にエラーが起きたら False
 
-    # パスワード入力欄を取得
-    def get_password_input(self, driver: WebDriver):
-        wait = WebDriverWait(driver, 10)  # 最大10秒待機するwaitを作成
-        element = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, '//input[@placeholder="パスワード"]')  # パスワード欄をXPATHで指定
-        ))
-        return element  # 要素を返す
+    def type_password(self, driver, password: str) -> bool:
+        try:
+            # パスワード入力欄がクリック可能になるまで、最大 10 秒間待つ
+            password_field = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, '//*[@id="contents_wrap"]/main/div[1]/section/div[2]/p[2]/input[1]')
+                )
+            )
+            password_field.send_keys(password)       # パスワードを入力
+            password_field.send_keys(Keys.RETURN)    # Enter キーを送信してフォームを submit
+            return True                              # 送信に成功したら True を返す
+        except Exception:
+            return False                             # 取得や送信時にエラーが起きたら False
 
-    # ログインボタンを取得
-    def get_login_button(self, driver: WebDriver):
-        wait = WebDriverWait(driver, 10)  # 最大10秒待機するwaitを作成
-        element = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//button[contains(text(), 'ログイン')]")  # ログインボタンをXPATHで指定
-        ))
-        return element  # 要素を返す
-
-    # メールアドレスを入力
-    def type_email(self, driver: WebDriver, email: str):
-        field = self.get_email_input(driver)  # メールアドレス入力欄を取得
-        field.send_keys(email)  # メールアドレスを入力
-
-    # パスワードを入力
-    def type_password(self, driver: WebDriver, password: str):
-        field = self.get_password_input(driver)  # パスワード入力欄を取得
-        field.send_keys(password)  # パスワードを入力
-
-    # ログインボタンをクリック
-    def press_login_button(self, driver: WebDriver):
-        button = self.get_login_button(driver)  # ログインボタンを取得
-        driver.execute_script("arguments[0].scrollIntoView(true);", button)  # ボタンを画面内にスクロール
-        button.click()  # ログインボタンをクリック
-
-class LibecityDashboardPage:
-    # ログイン後のユーザー名テキストを取得
-    def get_logged_in_username(self, driver: WebDriver) -> str:
-        wait = WebDriverWait(driver, 10)  # 最大10秒待機するwaitを作成
-        element = wait.until(EC.visibility_of_element_located(
-            (By.CSS_SELECTOR, ".user-name")  # ユーザー名表示要素をCSSセレクタで指定
-        ))
-        return element.text  # ユーザー名テキストを返す
+    def wait_for_login(self, driver, timeout: int = 10) -> str | None:
+        try:
+            # ログイン後のユーザー名表示要素が現れるまで、最大 timeout 秒間待つ
+            user_name_element = WebDriverWait(driver, timeout).until(
+                EC.presence_of_element_located(       # 要素が DOM 上に存在するまで
+                    (By.XPATH, '//*[@id="cw-menu"]/div[1]/div[1]/div[1]')
+                )
+            )
+            return user_name_element.text           # 成功したら要素のテキスト（ユーザー名）を返す
+        except Exception:
+            return None                              # 見つからない場合やタイムアウト時は None を返す
