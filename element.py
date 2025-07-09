@@ -14,8 +14,7 @@ class LibecityPage:
 
     # ログインページにアクセス
     def login_page(self, driver: WebDriver):
-        url = "https://libecity.com/sighnin"  # ログインページのURLを指定
-        driver.get(url)  # 指定したURLにアクセス
+        driver.get(url)  # 引数で指定したURLにアクセス
 
     # メールアドレス入力欄を取得
     def get_email_input(self, driver: WebDriver):
